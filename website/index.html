@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Debugging Copilot - Local-First AI DevTools Extension</title>
+    <meta name="description" content="An elite, local-first Chrome DevTools extension that chronologically correlates console logs and network payloads, providing instant diagnostic fixes with Gemini 2.5 Flash.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <!-- Floating Glassmorphic Navbar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="logo-dot"></span>
+                AI Debugging Copilot
+            </a>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#demo">Interactive Demo</a>
+                <a href="#install">Installation</a>
+                <a href="#privacy">Privacy Policy</a>
+            </nav>
+            <a href="#install" class="nav-btn">Download Extension</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-glow"></div>
+            <div class="container hero-container">
+                <span class="badge">v1.0.0 Stable Release</span>
+                <h1 class="hero-title">Supercharge Your DevTools with <span class="text-gradient">Local AI</span></h1>
+                <p class="hero-subtitle">An elite, client-side, local-first debugging copilot that correlates network failures and console exceptions in real-time using Gemini 2.5 Flash.</p>
+                <div class="hero-actions">
+                    <a href="#install" class="btn btn-primary">Download Extension</a>
+                    <a href="#demo" class="btn btn-secondary">Try Interactive Demo</a>
+                </div>
+
+                <!-- Extensions Mockup Panel -->
+                <div class="extension-mockup-wrapper">
+                    <div class="extension-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <div class="mockup-title">Chrome DevTools - AI Debugging Copilot</div>
+                            <div class="mockup-tabs">
+                                <span class="mock-tab active">Trace Feed</span>
+                                <span class="mock-tab">AI Diagnostician</span>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="mockup-sidebar">
+                                <div class="side-item active">Active Session</div>
+                                <div class="side-item">All Exceptions</div>
+                                <div class="side-item">Performance Metrics</div>
+                                <div class="side-item">API Credentials</div>
+                            </div>
+                            <div class="mockup-pane">
+                                <div class="mock-toolbar">
+                                    <span class="mock-recording-dot"></span>
+                                    <span class="mock-rec-text">RECORDING ACTIVE</span>
+                                    <span class="mock-btn-clear">Clear Logs</span>
+                                </div>
+                                <div class="mock-timeline">
+                                    <div class="timeline-log warn">
+                                        <span class="log-time">[20:05:12]</span>
+                                        <span class="log-badge warn">WARN</span>
+                                        <span class="log-text">API endpoint latency exceeded 1500ms</span>
+                                    </div>
+                                    <div class="timeline-log error">
+                                        <span class="log-time">[20:05:13]</span>
+                                        <span class="log-badge error">FAIL</span>
+                                        <span class="log-text">POST https://api.debugbit.com/v1/auth - 500 Internal Server Error</span>
+                                    </div>
+                                    <div class="timeline-log critical">
+                                        <span class="log-time">[20:05:13]</span>
+                                        <span class="log-badge critical">CRASH</span>
+                                        <span class="log-text">TypeError: Cannot read properties of undefined (reading 'split')</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Matrix Grid -->
+        <section id="features" class="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Engineered For High-Performance Debugging</h2>
+                    <p class="section-subtitle">No proxies, no central databases, no tracking. Just clean, developer-owned, state-of-the-art telemetry parsing.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-chrono"></div>
+                        <h3 class="feature-title">Chronological Correlation</h3>
+                        <p class="feature-desc">Fuses network payloads and standard console logs into a single, unified timeline index. Trace the exact origin cascade of any browser failure.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon icon-local"></div>
+                        <h3 class="feature-title">Strict Local-First Architecture</h3>
+                        <p class="feature-desc">All telemetry streams are captured in a sandboxed, client-side IndexedDB environment. Your debugging workspace stays strictly on your computer.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon icon-api"></div>
+                        <h3 class="feature-title">Your Key, Your Gateway</h3>
+                        <p class="feature-desc">Connect directly to Google's official Gemini models via secure REST endpoints using your own API key. No central servers and zero intermediary risks.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon icon-metric"></div>
+                        <h3 class="feature-title">Performance Diagnostics</h3>
+                        <p class="feature-desc">Integrated performance trackers observe Core Web Vitals (LCP, FCP, CLS) and JS execution blocks exceeding 50ms (Long Tasks) to pinpoint latency.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Demo Console Section -->
+        <section id="demo" class="demo-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">See It In Action</h2>
+                    <p class="section-subtitle">Experience our AI-powered diagnostic engine. Click the simulation button below to trigger a live browser crash and see the diagnostic output.</p>
+                </div>
+
+                <div class="demo-console">
+                    <!-- Left: Log Terminal -->
+                    <div class="console-box terminal-box">
+                        <div class="console-box-header">
+                            <span class="header-indicator inactive"></span>
+                            Telemetry Log Stream
+                        </div>
+                        <div class="console-box-content" id="logStream">
+                            <div class="terminal-empty-state">
+                                <p>Telemetry stream is currently quiet.</p>
+                                <button class="btn btn-simulate" id="simulateBtn">Simulate App Crash</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: AI Diagnostician -->
+                    <div class="console-box ai-report-box">
+                        <div class="console-box-header">
+                            <span class="header-indicator active"></span>
+                            AI Diagnostic Report
+                        </div>
+                        <div class="console-box-content" id="aiReportBox">
+                            <!-- Scanning Overlay -->
+                            <div class="scan-overlay" id="scanOverlay">
+                                <div class="scan-line"></div>
+                                <div class="scan-spinner"></div>
+                                <p class="scan-text" id="scanText">Awaiting telemetry simulation...</p>
+                            </div>
+                            <div class="ai-report-content" id="reportContent">
+                                <!-- Typewriter text will go here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step-by-Step Installation Guide -->
+        <section id="install" class="install-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Get Started In Under 2 Minutes</h2>
+                    <p class="section-subtitle">Follow these quick steps to load the unpacked extension into Google Chrome.</p>
+                </div>
+                <div class="steps-timeline">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h3 class="step-title">Download Release ZIP</h3>
+                        <p class="step-desc">Grab the latest pre-built distribution archive of AI Debugging Copilot from our official repository releases page.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h3 class="step-title">Load Unpacked Extension</h3>
+                        <p class="step-desc">Navigate to <code>chrome://extensions/</code>, enable <strong>Developer mode</strong> in the top-right, and select "Load unpacked" pointing to the zip's <code>dist</code> folder.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h3 class="step-title">Input Gemini Key & Debug</h3>
+                        <p class="step-desc">Open Chrome DevTools (<code>F12</code>), navigate to the <strong>AI Debugging Copilot</strong> panel, paste your personal Gemini API key, and click Record!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chrome-Compliant Privacy Policy Section -->
+        <section id="privacy" class="privacy-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Local-First Privacy Manifesto</h2>
+                    <p class="section-subtitle">We believe your code, network requests, and developer telemetry should belong solely to you.</p>
+                </div>
+                <div class="privacy-content-card">
+                    <div class="privacy-grid">
+                        <div class="privacy-item">
+                            <h4>Zero Central Telemetry Database</h4>
+                            <p>We do not operate a remote server, metrics broker, or tracking endpoint. All session records are saved exclusively in your browser’s sandboxed IndexedDB database.</p>
+                        </div>
+                        <div class="privacy-item">
+                            <h4>Direct, Serverless API Connection</h4>
+                            <p>Diagnostic requests are transmitted directly as a standard POST payload from your local client to Google's official Gemini REST endpoints, authenticated by your personal key. No third-party servers intercept this channel.</p>
+                        </div>
+                        <div class="privacy-item">
+                            <h4>Complete User Control</h4>
+                            <p>Telemetry captures are active only when the iOS-style recording switch is enabled. You can wipe, clear, or export your local database logs instantly at any moment with a single click.</p>
+                        </div>
+                        <div class="privacy-item">
+                            <h4>Open Source Auditable Codebase</h4>
+                            <p>Our complete code is published openly on GitHub, allowing you to audit, review, and verify that our client-side pipelines meet your corporate or private security standards.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 Aminai Technologies. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="https://github.com/AminaiTech/debugbit" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+                <a href="#privacy">Privacy Policy</a>
+                <a href="#install">Installation Guide</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+</html>
