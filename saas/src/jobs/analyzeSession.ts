@@ -2,6 +2,8 @@ import { eventTrigger } from '@trigger.dev/sdk';
 import { triggerClient } from '../lib/trigger';
 import { dbAdmin } from '../lib/db';
 import { getAIProvider, type DiagnosticContext } from '../lib/providers/aiFactory';
+import { resend } from '../lib/resend';
+import { getReportReadyEmailHTML } from '../lib/emails/templates';
 
 // Define the asynchronous job for non-blocking telemetry analysis
 export const analyzeSessionJob = triggerClient.defineJob({
@@ -20,7 +22,7 @@ export const analyzeSessionJob = triggerClient.defineJob({
     // 2. Fetch target Session header
     const { data: session, error: sessErr } = await dbAdmin
       .from('sessions')
-      .select('url')
+      .select('url, user_id')
       .eq('id', sessionId)
       .single();
 
@@ -113,6 +115,36 @@ export const analyzeSessionJob = triggerClient.defineJob({
     }
 
     await io.logger.info(`[AI Job Worker] Diagnostics complete! Cached report for session: ${sessionId}`);
+
+    // 8. Resolve target user profile email to trigger Resend Alert
+    if (session.user_id) {
+      try {
+        const { data: user } = await dbAdmin
+          .from('users')
+          .select('email, first_name')
+          .eq('id', session.user_id)
+          .single();
+
+        if (user?.email) {
+          await io.logger.info(`[AI Job Worker] Dispatching transactional diagnostic email alert to: ${user.email}`);
+          
+          await resend.emails.send({
+            from: 'DebugBit Alerts <alerts@debugbit.io>',
+            to: user.email,
+            subject: `🚨 [DebugBit] AI Diagnostics Ready — Session #${sessionId.slice(0, 8)}`,
+            html: getReportReadyEmailHTML(
+              sessionId, 
+              session.url, 
+              analysisReport.split('\n').slice(0, 8).join('\n') + '\n...'
+            ),
+          });
+          
+          await io.logger.info('[AI Job Worker] Email notification sent successfully via Resend!');
+        }
+      } catch (emailErr: any) {
+        await io.logger.warn(`[AI Job Worker] Failed sending Resend email notification: ${emailErr.message}`);
+      }
+    }
 
     return {
       status: 'success',
