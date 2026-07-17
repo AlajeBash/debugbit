@@ -127,6 +127,21 @@ export async function POST(req: NextRequest) {
       if (perfError) console.error('[Sync Router] Performance bulk write error:', perfError.message);
     }
 
+    // 6. Asynchronously trigger background AI analysis via Trigger.dev
+    if (session.status === 'completed' || session.status === 'failed') {
+      try {
+        const { triggerClient } = await import('../../../lib/trigger');
+        await triggerClient.send({
+          name: 'session.synced',
+          payload: { sessionId: session.id }
+        });
+        console.log(`[Sync Router] Asynchronously scheduled background AI analysis for session ${session.id}`);
+      } catch (err: any) {
+        console.error('[Sync Router] Background trigger failed:', err.message);
+        // Do NOT fail the sync request itself since uploads must never block
+      }
+    }
+
     return NextResponse.json({
       status: 'success',
       syncedSessionId: session.id,

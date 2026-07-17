@@ -130,11 +130,11 @@ export async function syncSessionToSaaS(sessionId: string): Promise<boolean> {
  */
 export async function triggerBackgroundSyncSweep(): Promise<void> {
   try {
-    const unsyncedSessions = await db.sessions
-      .where('isSynced')
-      .equals(0) // false
-      .and(sess => sess.status === 'completed' || sess.status === 'failed')
-      .toArray();
+    const sessions = await db.sessions.toArray();
+    const unsyncedSessions = sessions.filter(sess => 
+      !sess.isSynced && 
+      (sess.status === 'completed' || sess.status === 'failed')
+    );
 
     if (unsyncedSessions.length === 0) return;
 
