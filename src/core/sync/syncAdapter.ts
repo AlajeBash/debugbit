@@ -1,4 +1,4 @@
-import { db, type Session } from '../storage/dexieStore';
+import { db } from '../storage/dexieStore';
 import { scrubTelemetry } from './scrubber';
 
 const DEFAULT_SAAS_GATEWAY_URL = 'https://debugbit-saas-platform.vercel.app'; // Customizable default endpoint
