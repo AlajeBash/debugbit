@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTelemetryStore, type UnifiedTelemetryEvent, type FilterType } from '../store/useTelemetryStore';
+import { useTelemetryStore, type UnifiedTelemetryEvent, type FilterType } from '../../store/useTelemetryStore';
 import { 
   Terminal, 
   Globe, 

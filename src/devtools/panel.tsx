@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useTelemetryStore, type UnifiedTelemetryEvent } from '../store/useTelemetryStore';
-import { Timeline } from '../components/Timeline';
+import { Timeline } from '../shared/components/Timeline';
 import { 
   Trash2, 
   Download, 
@@ -470,7 +470,7 @@ export const Panel: React.FC = () => {
             <Calendar className="h-3.5 w-3.5 text-dark-400" />
             <select
               value={activeSessionId || ''}
-              onChange={(e) => setActiveSessionId(Number(e.target.value) || null)}
+              onChange={(e) => setActiveSessionId(e.target.value || null)}
               className="bg-dark-900 border border-dark-800 rounded-lg text-[10px] font-mono px-2 py-1 text-dark-200 focus:border-brand-500/50 outline-none max-w-[150px] cursor-pointer"
             >
               {sessions.length === 0 ? (
@@ -478,7 +478,7 @@ export const Panel: React.FC = () => {
               ) : (
                 sessions.map((sess) => (
                   <option key={sess.id} value={sess.id}>
-                    Session #{sess.id} ({new Date(sess.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                    Session #{String(sess.id).slice(0, 8)} ({new Date(sess.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
                   </option>
                 ))
               )}

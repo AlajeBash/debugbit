@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, pruneOldSessions, type Session, type NetworkLog, type ConsoleLog } from '../db/dexieStore';
+import { db, pruneOldSessions, type Session, type NetworkLog, type ConsoleLog } from '../core/storage/dexieStore';
 import { liveQuery } from 'dexie';
 
 export type FilterType = 'all' | 'errors' | 'network' | 'logs';
@@ -9,7 +9,7 @@ export type UnifiedTelemetryEvent =
   | { id: string; timestamp: number; category: 'console'; data: ConsoleLog };
 
 interface TelemetryState {
-  activeSessionId: number | null;
+  activeSessionId: string | null;
   selectedLog: UnifiedTelemetryEvent | null;
   filterType: FilterType;
   sessions: Session[];
@@ -21,12 +21,12 @@ interface TelemetryState {
   geminiKey: string | null;
   isAnalyzing: boolean;
   aiReport: string | null;
-
+  
   // Recording State
   isRecording: boolean;
   
   // Actions
-  setActiveSessionId: (id: number | null) => void;
+  setActiveSessionId: (id: string | null) => void;
   setSelectedLog: (log: UnifiedTelemetryEvent | null) => void;
   setFilterType: (filter: FilterType) => void;
   clearCurrentSession: () => Promise<void>;
@@ -265,7 +265,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
     set({ isAnalyzing: true, aiReport: null });
 
     try {
-      const { analyzeTelemetryTimeline } = await import('../core/aiAnalyzer');
+      const { analyzeTelemetryTimeline } = await import('../core/ai/aiAnalyzer');
       const report = await analyzeTelemetryTimeline(geminiKey, unifiedEvents);
       set({ aiReport: report, isAnalyzing: false });
     } catch (err) {

@@ -1,4 +1,4 @@
-import { type UnifiedTelemetryEvent } from '../store/useTelemetryStore';
+import { type UnifiedTelemetryEvent } from '../../store/useTelemetryStore';
 
 const SYSTEM_PROMPT = `You are an expert AI Senior Software Engineer and Browser Debugging Specialist.
 Analyze the following chronological telemetry log (consisting of console logs, network errors, and unhandled exceptions) captured from a developer's browser session.

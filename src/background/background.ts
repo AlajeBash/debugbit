@@ -1,4 +1,4 @@
-import { db } from '../db/dexieStore';
+import { db } from '../core/storage/dexieStore';
 
 console.log('[AI Copilot Background] Service Worker initialized and running.');
 
@@ -19,14 +19,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
-// In-memory cache mapping tabId -> active sessionId
-const activeSessions = new Map<number, number>();
+// In-memory cache mapping tabId -> active string sessionId
+const activeSessions = new Map<number, string>();
 
 /**
  * Resolves the active sessionId for a given tab.
  * If none exists, a new session record is created on the fly.
  */
-async function getOrCreateSessionForTab(tabId: number, url: string): Promise<number> {
+async function getOrCreateSessionForTab(tabId: number, url: string): Promise<string> {
   const cachedSessionId = activeSessions.get(tabId);
   if (cachedSessionId) {
     // Double check that this session actually exists in our DB
@@ -34,12 +34,18 @@ async function getOrCreateSessionForTab(tabId: number, url: string): Promise<num
     if (exists) return cachedSessionId;
   }
 
-  // Create a new session
-  const sessionId = await db.sessions.add({
+  // Create a new session with cryptographically secure unique ID
+  const sessionId = typeof crypto !== 'undefined' && crypto.randomUUID 
+    ? crypto.randomUUID() 
+    : Math.random().toString(36).substring(2, 15) + '-' + Date.now();
+
+  await db.sessions.add({
+    id: sessionId,
     tabId,
     startTime: Date.now(),
     url: url || 'unknown',
-    status: 'active'
+    status: 'active',
+    isSynced: false
   });
 
   activeSessions.set(tabId, sessionId);
@@ -113,12 +119,20 @@ async function handleTelemetryMessage(tabId: number, tabUrl: string, payload: an
   // If page navigation occurs, wrap up the current session and start a fresh one!
   if (payload.type === 'PAGE_LOADED') {
     await terminateSession(tabId);
-    const newSessionId = await db.sessions.add({
+    
+    const newSessionId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15) + '-' + Date.now();
+
+    await db.sessions.add({
+      id: newSessionId,
       tabId,
       startTime: timestamp,
       url: payload.url || tabUrl,
-      status: 'active'
+      status: 'active',
+      isSynced: false
     });
+    
     activeSessions.set(tabId, newSessionId);
     console.log(`[AI Copilot Background] Tab navigation. Spawning session ${newSessionId} for tab ${tabId}`);
     return;
