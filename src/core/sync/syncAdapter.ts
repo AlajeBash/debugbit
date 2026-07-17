@@ -4,6 +4,21 @@ import { scrubTelemetry } from './scrubber';
 const DEFAULT_SAAS_GATEWAY_URL = 'https://debugbit-saas-platform.vercel.app'; // Customizable default endpoint
 
 /**
+ * Resolves whether the user has toggled "Strict Local-Only Privacy Mode" inside extension options.
+ */
+export async function isLocalOnlyPrivacyMode(): Promise<boolean> {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    try {
+      const result = await chrome.storage.local.get('strict_local_only');
+      return result.strict_local_only === true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
  * Resolves the SaaS Sync Endpoint URL from Chrome Storage.
  */
 export async function getSaaSEndpoint(): Promise<string> {
@@ -34,11 +49,30 @@ export async function getProjectApiKey(): Promise<string | null> {
 }
 
 /**
+ * Compresses string payload using modern browser native Gzip CompressionStream.
+ * Extremely high-performance client-side payload compression with zero external dependencies.
+ */
+export async function compressPayload(payload: string): Promise<ArrayBuffer> {
+  const stream = new Blob([payload]).stream();
+  // @ts-ignore - Support modern Chrome CompressionStream API
+  const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+  const response = new Response(compressedStream);
+  return await response.arrayBuffer();
+}
+
+/**
  * Synchronizes a specific session and all its associated telemetry logs 
  * to the centralized SaaS dashboard after executing enterprise PII scrubbing.
  */
 export async function syncSessionToSaaS(sessionId: string): Promise<boolean> {
   try {
+    // 0. Gating check: Block transmission if Strict Local-Only Privacy Mode is toggled
+    const isPrivacyMode = await isLocalOnlyPrivacyMode();
+    if (isPrivacyMode) {
+      console.info(`[Sync Adapter] Synchronization skipped for session ${sessionId}: Strict Local-Only Privacy Mode is enabled.`);
+      return false;
+    }
+
     const apiKey = await getProjectApiKey();
     if (!apiKey) {
       console.warn('[Sync Adapter] Synchronization aborted: SaaS Project API Key is not configured.');
@@ -97,14 +131,34 @@ export async function syncSessionToSaaS(sessionId: string): Promise<boolean> {
 
     // Apply zero-trust telemetry scrubber
     const scrubbedPayload = scrubTelemetry(payload);
+    const jsonString = JSON.stringify(scrubbedPayload);
 
-    // 3. Dispatch payload to the SaaS Sync REST API Gateway
+    // 3. Compress payload using high-efficiency Gzip stream
+    let syncBody: any = jsonString;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    // @ts-ignore - Support modern Chrome CompressionStream API
+    if (typeof CompressionStream !== 'undefined') {
+      try {
+        syncBody = await compressPayload(jsonString);
+        headers['Content-Encoding'] = 'gzip';
+        headers['Content-Type'] = 'application/octet-stream';
+        console.log(`[Sync Adapter] Successfully compressed telemetry payload from ${jsonString.length} bytes to ${syncBody.byteLength} bytes.`);
+      } catch (compressErr) {
+        console.warn('[Sync Adapter] Gzip CompressionStream failed, falling back to plaintext Sync:', compressErr);
+        syncBody = jsonString;
+        headers['Content-Encoding'] = 'identity';
+        headers['Content-Type'] = 'application/json';
+      }
+    }
+
+    // 4. Dispatch payload to the SaaS Sync REST API Gateway
     const response = await fetch(`${gatewayUrl}/api/sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(scrubbedPayload)
+      headers,
+      body: syncBody
     });
 
     if (!response.ok) {
@@ -113,7 +167,7 @@ export async function syncSessionToSaaS(sessionId: string): Promise<boolean> {
       return false;
     }
 
-    // 4. Update the local session record to mark as synced successfully
+    // 5. Update the local session record to mark as synced successfully
     await db.sessions.update(sessionId, { isSynced: true });
     console.log(`[Sync Adapter] Session ${sessionId} successfully synced with SaaS Cloud Platform.`);
     return true;
@@ -147,3 +201,4 @@ export async function triggerBackgroundSyncSweep(): Promise<void> {
     console.error('[Sync Adapter] Background sweep failed:', err);
   }
 }
+

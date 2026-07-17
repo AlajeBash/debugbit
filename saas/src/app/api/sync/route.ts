@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbAdmin } from '../../../lib/db';
 import { validateTelemetryPayload } from '../../../lib/security';
+import zlib from 'zlib';
 
 interface SyncPayload {
   apiKey: string;
@@ -29,7 +30,20 @@ interface SyncPayload {
 
 export async function POST(req: NextRequest) {
   try {
-    const body: SyncPayload = await req.json();
+    let body: SyncPayload;
+    const contentEncoding = req.headers.get('content-encoding') || '';
+
+    // Automatically detect and decompress incoming client Gzip telemetry payloads
+    if (contentEncoding.toLowerCase() === 'gzip') {
+      const arrayBuffer = await req.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const decompressed = zlib.gunzipSync(buffer);
+      body = JSON.parse(decompressed.toString('utf-8'));
+      console.log(`[Sync Ingest API] Decompressed Gzip stream successfully. Payload characters: ${JSON.stringify(body).length}`);
+    } else {
+      body = await req.json();
+    }
+
     const { apiKey, session, logs = [], network = [], performance = [] } = body;
 
     if (!apiKey || !session || !session.id) {
