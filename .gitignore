@@ -35,6 +35,8 @@ Thumbs.db
 *.tar.gz
 *.tgz
 
-# Local logs
-logs/
 *.log
+
+# Next.js Build Outputs
+.next/
+saas/.next/
