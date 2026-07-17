@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbAdmin } from '../../../lib/db';
+import { validateTelemetryPayload } from '../../../lib/security';
 
 interface SyncPayload {
   apiKey: string;
@@ -36,6 +37,22 @@ export async function POST(req: NextRequest) {
         { error: 'Missing required parameters: apiKey, session.id' },
         { status: 400 }
       );
+    }
+
+    // Secure Ingestion validation: Validate payload structure against Zod schema rules
+    const validationResult = validateTelemetryPayload({
+      sessionId: session.id,
+      tabId: session.tabId || 0,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      url: session.url || 'http://unknown.com',
+      consoleLogs: logs,
+      networkLogs: network.map(n => ({ ...n, url: n.url || 'http://unknown.com' })),
+      performanceMetrics: performance,
+    });
+
+    if (!validationResult.success) {
+      console.warn('[Sync Ingest Guard] Warning: Telemetry payload contains non-compliant formats:', validationResult.error.message);
     }
 
     // 1. Resolve Project ownership using API Key
