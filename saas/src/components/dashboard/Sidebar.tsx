@@ -39,15 +39,22 @@ export default function Sidebar({
       }`}
     >
       {/* Sidebar Header Brand */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-[#1f2937]">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="h-9 w-12 shrink-0 rounded-xl bg-[#7c3aed]/5 border border-[#7c3aed]/25 flex items-center justify-center shadow-lg shadow-[#7c3aed]/5 overflow-hidden">
-            <img src="/logo.png" alt="DebugBit Brand Logo" className="h-full w-full object-cover rounded-lg" />
-          </div>
-          {!isSidebarCollapsed && (
-            <span className="font-outfit text-lg font-extrabold tracking-tight text-white">
-              Debug<span className="text-[#a78bfa]">Bit</span>
-            </span>
+      <div className="h-16 flex items-center justify-between px-4 border-b border-[#1f2937]">
+        <div className="flex items-center justify-center w-full overflow-hidden">
+          {isSidebarCollapsed ? (
+            <div className="h-9 w-9 bg-[#7c3aed]/5 border border-[#7c3aed]/25 rounded-xl flex items-center justify-center overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="DebugBit Bug Icon" 
+                className="h-full w-auto max-w-none scale-[1.9] translate-x-[-1px]" 
+              />
+            </div>
+          ) : (
+            <img 
+              src="/logo.png" 
+              alt="DebugBit Brand Logo" 
+              className="h-12 w-auto object-contain animate-fadeIn" 
+            />
           )}
         </div>
       </div>

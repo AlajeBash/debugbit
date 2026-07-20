@@ -32,16 +32,15 @@ export default function Home() {
       {/* Corporate Glass Header */}
       <header className="sticky top-0 z-50 w-full border-b border-gray-800/60 bg-[#030712]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-[#7c3aed]/5 border border-[#7c3aed]/25 p-1 rounded-xl flex items-center justify-center shadow-lg shadow-[#7c3aed]/5 overflow-hidden h-9 w-12">
-              <img src="/logo.png" alt="DebugBit Brand Logo" className="h-full w-full object-cover rounded-lg" />
-            </div>
-            <div>
-              <span className="font-outfit font-extrabold text-lg text-white tracking-tight">
-                Debug<span className="text-[#a78bfa]">Bit</span>
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[9px] bg-gray-800 border border-gray-700 text-gray-400 font-bold tracking-wider uppercase rounded-full">v2.0</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center">
+              <img 
+                src="/logo.png" 
+                alt="DebugBit Logo" 
+                className="h-11 sm:h-14 w-auto object-contain hover:opacity-90 transition-all duration-200" 
+              />
+            </Link>
+            <span className="hidden sm:inline-block px-2 py-0.5 text-[9px] bg-gray-800 border border-gray-700 text-gray-400 font-bold tracking-wider uppercase rounded-full">v2.0</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-300">
