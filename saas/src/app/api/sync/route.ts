@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     if (session.status === 'completed' || session.status === 'failed') {
       try {
         const { triggerClient } = await import('../../../lib/trigger');
-        await triggerClient.send({
+        await triggerClient.sendEvent({
           name: 'session.synced',
           payload: { sessionId: session.id }
         });

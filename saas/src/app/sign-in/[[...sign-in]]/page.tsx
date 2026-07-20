@@ -2,6 +2,8 @@ import { SignIn, auth } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { dark } from "@clerk/themes";
 
+export const dynamic = "force-dynamic";
+
 export default function Page() {
   const { userId } = auth();
   if (userId) {

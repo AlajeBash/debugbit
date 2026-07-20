@@ -5,4 +5,4 @@ import { triggerClient } from '../../../lib/trigger';
 import '../../../jobs/analyzeSession';
 
 // Export the routes needed for the Trigger.dev dev server handshakes
-export const { POST, GET } = createAppRoute(triggerClient);
+export const { POST } = createAppRoute(triggerClient);
