@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^4.29.9",
+    "@clerk/themes": "^2.4.57",
     "@novu/node": "^0.24.0",
     "@sentry/nextjs": "^7.109.0",
     "@stripe/stripe-js": "^3.0.7",
