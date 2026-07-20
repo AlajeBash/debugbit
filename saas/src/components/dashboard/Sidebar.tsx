@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Activity
 } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, SignedIn, SignedOut } from '@clerk/nextjs';
 
 interface SidebarProps {
   activeTab: string;
@@ -79,23 +79,41 @@ export default function Sidebar({
       </nav>
 
       {/* User Profile Block */}
-      <div className="p-4 border-t border-[#1f2937] bg-[#070a12]/20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <UserButton 
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                userButtonAvatarBox: "h-9 w-9 rounded-xl border border-[#1f2937] hover:border-[#7c3aed] transition-colors"
-              }
-            }}
-          />
-          {!isSidebarCollapsed && (
-            <div className="flex flex-col text-left overflow-hidden">
-              <span className="text-xs font-bold text-white truncate">Developer Account</span>
-              <span className="text-[10px] text-gray-500 font-medium truncate">Session Active</span>
+      <div className="p-4 border-t border-[#1f2937] bg-[#070a12]/20">
+        <SignedIn>
+          <div className="flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "h-9 w-9 rounded-xl border border-[#1f2937] hover:border-[#7c3aed] transition-colors"
+                  }
+                }}
+              />
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col text-left overflow-hidden">
+                  <span className="text-xs font-bold text-white truncate">Developer Account</span>
+                  <span className="text-[10px] text-emerald-400 font-medium">Session Active</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </SignedIn>
+        
+        <SignedOut>
+          <a 
+            href="/sign-in"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-xl bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:bg-[#7c3aed]/20 text-white hover:text-white transition-all text-xs font-bold shadow-md shadow-[#7c3aed]/5"
+          >
+            <div className="h-6 w-6 rounded-lg bg-[#7c3aed] flex items-center justify-center text-white shrink-0 text-[10px]">
+              ⚡
+            </div>
+            {!isSidebarCollapsed && (
+              <span className="truncate text-gray-300">Sign In to Sync</span>
+            )}
+          </a>
+        </SignedOut>
       </div>
 
       {/* Collapse Trigger Footer */}
