@@ -1,17 +1,29 @@
-import { authMiddleware } from '@clerk/nextjs';
+import { authMiddleware, redirectToSignIn } from '@clerk/nextjs';
+import { createClient as updateSupabaseSession } from '@/utils/supabase/middleware';
 
 export default authMiddleware({
   // Routes that can be accessed by unauthenticated users
   publicRoutes: [
     '/',
     '/api/sync',
-    '/api/webhooks/clerk'
+    '/api/webhooks/clerk',
+    '/todos'
   ],
   
   // Routes that are fully ignored by the auth checks (e.g. static assets)
   ignoredRoutes: [
     '/api/sync' // Extension bulk-sync handles its own API key authentication
-  ]
+  ],
+
+  afterAuth(auth, req, evt) {
+    // Handle redirect for unauthenticated users trying to access protected routes
+    if (!auth.userId && !auth.isPublicRoute) {
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
+
+    // Keep Supabase session refreshed by updating cookies
+    return updateSupabaseSession(req);
+  }
 });
 
 export const config = {
@@ -21,3 +33,4 @@ export const config = {
     '/(api|trpc)(.*)'
   ],
 };
+
