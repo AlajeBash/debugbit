@@ -2,14 +2,17 @@ import { authMiddleware, redirectToSignIn } from '@clerk/nextjs';
 import { createClient as updateSupabaseSession } from '@/utils/supabase/middleware';
 
 export default authMiddleware({
-  // Routes that can be accessed by unauthenticated users
   publicRoutes: [
     '/',
     '/api/sync',
     '/api/webhooks/clerk',
     '/todos',
     '/dashboard',
-    '/dashboard(.*)'
+    '/dashboard(.*)',
+    '/sign-in',
+    '/sign-in(.*)',
+    '/sign-up',
+    '/sign-up(.*)'
   ],
   
   // Routes that are fully ignored by the auth checks (e.g. static assets)

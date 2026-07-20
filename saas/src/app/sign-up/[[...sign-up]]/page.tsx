@@ -1,14 +1,19 @@
-import { SignUp, auth } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+"use client";
+
+import { SignUp, useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { dark } from "@clerk/themes";
 
-export const dynamic = "force-dynamic";
-
 export default function Page() {
-  const { userId } = auth();
-  if (userId) {
-    redirect("/dashboard");
-  }
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.replace("/dashboard");
+    }
+  }, [isSignedIn, isLoaded, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#030712] py-12 px-4 sm:px-6 lg:px-8">
