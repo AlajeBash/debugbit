@@ -1,0 +1,96 @@
+'use client';
+
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Brain, 
+  Key, 
+  CreditCard, 
+  ChevronLeft, 
+  ChevronRight,
+  Activity
+} from 'lucide-react';
+
+interface SidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (collapsed: boolean) => void;
+}
+
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed
+}: SidebarProps) {
+  const navItems = [
+    { id: 'telemetry', label: 'Telemetry Stream', icon: LayoutDashboard },
+    { id: 'ai', label: 'AI Correlation', icon: Brain },
+    { id: 'keys', label: 'API Keys & Settings', icon: Key },
+    { id: 'billing', label: 'Stripe Billing', icon: CreditCard },
+  ];
+
+  return (
+    <aside 
+      className={`fixed top-0 left-0 z-20 h-screen bg-[#0b0f19] border-r border-[#1f2937] transition-all duration-300 flex flex-col ${
+        isSidebarCollapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      {/* Sidebar Header Brand */}
+      <div className="h-16 flex items-center justify-between px-6 border-b border-[#1f2937]">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#4c1d95] flex items-center justify-center shadow-lg shadow-[#7c3aed]/10 border border-[#a78bfa]/20">
+            <Activity className="h-5 w-5 text-white animate-pulse" />
+          </div>
+          {!isSidebarCollapsed && (
+            <span className="font-outfit text-lg font-extrabold tracking-tight text-white">
+              Debug<span className="text-[#a78bfa]">Bit</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Items */}
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-semibold transition-all group ${
+                isActive 
+                  ? 'bg-gradient-to-r from-[#7c3aed]/10 to-transparent border border-[#7c3aed]/20 text-[#a78bfa] shadow-md shadow-[#7c3aed]/5' 
+                  : 'text-gray-400 hover:bg-[#111827] hover:text-white border border-transparent'
+              }`}
+            >
+              <Icon className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                isActive ? 'text-[#a78bfa]' : 'text-gray-400 group-hover:text-white'
+              }`} />
+              {!isSidebarCollapsed && (
+                <span className="truncate">{item.label}</span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Collapse Trigger Footer */}
+      <div className="p-4 border-t border-[#1f2937] bg-[#070a12]/50 flex justify-end">
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="p-2 rounded-lg bg-[#111827] border border-[#1f2937] text-gray-400 hover:text-white hover:bg-[#1f2937] transition-all"
+          title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          {isSidebarCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </aside>
+  );
+}
