@@ -1,7 +1,13 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignIn, auth } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 import { dark } from "@clerk/themes";
 
 export default function Page() {
+  const { userId } = auth();
+  if (userId) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#030712] py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 flex flex-col items-center">
@@ -20,7 +26,8 @@ export default function Page() {
               formButtonPrimary: 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white border-none shadow-md shadow-[#7c3aed]/25',
               card: 'bg-[#0b0f19] border border-[#1f2937] text-white shadow-xl rounded-2xl',
               headerTitle: 'text-white font-bold',
-              headerSubtitle: 'text-[#9ca3af]',
+              headerSubtitle: 'text-gray-200 font-medium',
+              dividerText: 'text-gray-300 font-semibold',
               socialButtonsBlockButton: 'bg-[#111827] border border-[#1f2937] text-white hover:bg-[#1f2937]',
               formFieldLabel: 'text-[#d1d5db]',
               formFieldInput: 'bg-[#030712] border border-[#1f2937] text-white focus:border-[#7c3aed]',
