@@ -1,21 +1,29 @@
-MIT License
+AMINAI TECHNOLOGIES SOFTWARE LICENSE
 
-Copyright (c) 2026 Aminai Technologies
+Copyright (c) 2026 Aminai Technologies. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This Software License ("License") is a legal agreement between you (either an individual or a single entity) and Aminai Technologies ("Aminai") for the software product DebugBit AI Debugging Copilot, including any associated media, printed materials, and electronic documentation ("Software").
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this License. If you do not agree to the terms of this License, do not install or use the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. GRANT OF LICENSE
+Aminai Technologies grants you a non-exclusive, non-transferable, limited license to install and use the Software solely for your internal development and debugging workflows, subject to the terms and conditions set forth herein.
+
+2. INTELLECTUAL PROPERTY & PROPRIETARY RIGHTS
+All title, ownership rights, and intellectual property rights in and to the Software (including but not limited to any source code, designs, branding, logos, graphics, and algorithms) are owned exclusively by Aminai Technologies. The Software is protected by copyright laws and international treaty provisions.
+
+3. RESTRICTIONS
+You shall not:
+(a) Modify, adapt, translate, reverse engineer, decompile, or disassemble the Software.
+(b) Sublicense, lease, rent, loan, sell, or distribute the Software (or any portion thereof) to any third party without explicit prior written authorization from Aminai Technologies.
+(c) Remove, obscure, or alter any copyright notices, trademarks, or other proprietary rights notices contained in or on the Software.
+(d) Use the Software for any purpose that violates applicable local or international laws.
+
+4. TERMINATION
+This License is effective until terminated. Your rights under this License will terminate automatically without notice from Aminai Technologies if you fail to comply with any of its terms. Upon termination, you must cease all use of the Software and destroy all copies in your possession.
+
+5. WARRANTY DISCLAIMER
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL AMINAI TECHNOLOGIES OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING but not limited to procurement of substitute goods or services; loss of use, data, or profits; or business interruption) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+For licensing requests or enterprise authorization, contact:
+Aminai Technologies Legal Department
