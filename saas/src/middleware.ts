@@ -7,7 +7,9 @@ export default authMiddleware({
     '/',
     '/api/sync',
     '/api/webhooks/clerk',
-    '/todos'
+    '/todos',
+    '/dashboard',
+    '/dashboard(.*)'
   ],
   
   // Routes that are fully ignored by the auth checks (e.g. static assets)
