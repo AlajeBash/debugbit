@@ -5,6 +5,8 @@ export default authMiddleware({
   publicRoutes: [
     '/',
     '/api/sync',
+    '/api/sessions',
+    '/api/sessions(.*)',
     '/api/webhooks/clerk',
     '/todos',
     '/dashboard',
@@ -17,7 +19,9 @@ export default authMiddleware({
   
   // Routes that are fully ignored by the auth checks (e.g. static assets)
   ignoredRoutes: [
-    '/api/sync' // Extension bulk-sync handles its own API key authentication
+    '/api/sync', // Extension bulk-sync handles its own API key authentication
+    '/api/sessions',
+    '/api/sessions(.*)'
   ],
 
   afterAuth(auth, req, evt) {

@@ -18,6 +18,7 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
+import TimelineSequencer from './TimelineSequencer';
 
 interface TelemetryEvent {
   id: string;
@@ -59,14 +60,348 @@ export default function AiCorrelationView({
   deleteComment
 }: AiCorrelationViewProps) {
   const [commentInput, setCommentInput] = useState('');
-  const [activeSubTab, setActiveTab] = useState<'cognitive' | 'diagnose' | 'diff'>('cognitive');
+  const [activeSubTab, setActiveTab] = useState<'cognitive' | 'timeline' | 'diagnose' | 'diff'>('cognitive');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const handleAddComment = () => {
     if (!commentInput.trim()) return;
     addComment(commentInput);
     setCommentInput('');
+  };
+
+  const exportBugReport = (format: 'markdown' | 'json' | 'csv' | 'pdf') => {
+    if (!selectedSessionId) return;
+
+    if (format === 'json') {
+      const content = JSON.stringify({
+        sessionId: selectedSessionId,
+        exportedAt: Date.now(),
+        events: events,
+        comments: comments
+      }, null, 2);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `debugbit-report-${selectedSessionId.slice(0, 8)}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (format === 'csv') {
+      const headers = ['Timestamp', 'Category', 'Type_Method_Metric', 'Details_Message_Value', 'Status', 'Duration_ms'];
+      const rows = events.map(evt => {
+        const time = new Date(evt.timestamp).toLocaleString();
+        if (evt.category === 'network') {
+          return [time, 'NETWORK', evt.method || '', evt.url || '', evt.status || '', Math.round(evt.duration || 0)];
+        } else if (evt.category === 'performance') {
+          return [time, 'PERFORMANCE', evt.metricName || '', evt.value || '', '', ''];
+        } else {
+          return [time, 'CONSOLE', (evt.level || 'log').toUpperCase(), evt.message || '', '', ''];
+        }
+      });
+      const content = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `debugbit-report-${selectedSessionId.slice(0, 8)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (format === 'pdf') {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow popups to export the PDF report.');
+        return;
+      }
+
+      const reportHtml = `
+        <html>
+          <head>
+            <title>DebugBit AI Diagnostic Report - Session ${selectedSessionId}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+            <style>
+              body {
+                font-family: 'Inter', sans-serif;
+                background-color: #030712;
+                color: #f3f4f6;
+                padding: 40px;
+                margin: 0;
+              }
+              .container {
+                max-width: 900px;
+                margin: 0 auto;
+                border: 1px solid #1f2937;
+                border-radius: 16px;
+                background: #0b0f19;
+                padding: 32px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+              }
+              .header {
+                border-bottom: 2px solid #1f2937;
+                padding-bottom: 24px;
+                margin-bottom: 24px;
+              }
+              .title {
+                font-size: 24px;
+                font-weight: 800;
+                margin: 0;
+                background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              }
+              .meta {
+                margin-top: 12px;
+                font-size: 13px;
+                color: #9ca3af;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+              }
+              .meta-item {
+                font-family: 'JetBrains Mono', monospace;
+              }
+              .section-title {
+                font-size: 18px;
+                font-weight: 700;
+                margin: 32px 0 16px 0;
+                color: #e5e7eb;
+                border-bottom: 1px solid #1f2937;
+                padding-bottom: 8px;
+              }
+              .event {
+                padding: 12px;
+                border-bottom: 1px solid #111827;
+                font-size: 12px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+              }
+              .event-time {
+                font-family: 'JetBrains Mono', monospace;
+                color: #6b7280;
+                min-width: 80px;
+              }
+              .event-badge {
+                font-size: 9px;
+                text-transform: uppercase;
+                font-weight: 800;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: 'JetBrains Mono', monospace;
+              }
+              .badge-network {
+                background: rgba(59, 130, 246, 0.15);
+                color: #60a5fa;
+                border: 1px solid rgba(59, 130, 246, 0.25);
+              }
+              .badge-console {
+                background: rgba(245, 158, 11, 0.15);
+                color: #fbbf24;
+                border: 1px solid rgba(245, 158, 11, 0.25);
+              }
+              .badge-performance {
+                background: rgba(16, 185, 129, 0.15);
+                color: #34d399;
+                border: 1px solid rgba(16, 185, 129, 0.25);
+              }
+              .badge-error {
+                background: rgba(239, 68, 68, 0.15);
+                color: #f87171;
+                border: 1px solid rgba(239, 68, 68, 0.25);
+              }
+              .event-details {
+                flex: 1;
+                font-family: 'JetBrains Mono', monospace;
+                word-break: break-all;
+              }
+              .comments-list {
+                margin-top: 16px;
+              }
+              .comment-item {
+                border-left: 3px solid #7c3aed;
+                padding-left: 12px;
+                margin-bottom: 12px;
+                font-size: 13px;
+              }
+              .comment-author {
+                font-weight: 700;
+                color: #a78bfa;
+              }
+              .comment-time {
+                font-size: 11px;
+                color: #6b7280;
+              }
+              @media print {
+                body {
+                  background: white !important;
+                  color: #000 !important;
+                  padding: 20px;
+                }
+                .container {
+                  border: none;
+                  box-shadow: none;
+                  padding: 0;
+                  background: white;
+                }
+                .title {
+                  background: none;
+                  -webkit-text-fill-color: initial;
+                  color: #000;
+                }
+                .meta-item {
+                  color: #4b5563;
+                }
+                .event {
+                  border-bottom: 1px solid #e5e7eb;
+                }
+                .badge-network {
+                  background: #eff6ff;
+                  color: #1d4ed8;
+                  border: 1px solid #bfdbfe;
+                }
+                .badge-console {
+                  background: #fffbeb;
+                  color: #b45309;
+                  border: 1px solid #fde68a;
+                }
+                .badge-performance {
+                  background: #ecfdf5;
+                  color: #047857;
+                  border: 1px solid #a7f3d0;
+                }
+                .badge-error {
+                  background: #fef2f2;
+                  color: #b91c1c;
+                  border: 1px solid #fecaca;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="title">DebugBit AI Diagnostic Report</div>
+                <div class="meta">
+                  <div class="meta-item">Session ID: ${selectedSessionId}</div>
+                  <div class="meta-item">Generated: ${new Date().toLocaleString()}</div>
+                  <div class="meta-item">Total Captured Events: ${events.length}</div>
+                </div>
+              </div>
+
+              <div class="section-title">Timeline Event Trace Log</div>
+              ${events.map(ev => {
+                const time = new Date(ev.timestamp).toLocaleTimeString();
+                let badgeClass = 'badge-console';
+                let typeLabel = 'console';
+                let messageText = '';
+
+                if (ev.category === 'network') {
+                  badgeClass = 'badge-network';
+                  typeLabel = `network [${ev.method || 'GET'}]`;
+                  messageText = `${ev.url || ''} - Status: ${ev.status || ''} (${Math.round(ev.duration || 0)}ms)`;
+                } else if (ev.category === 'performance') {
+                  badgeClass = 'badge-performance';
+                  typeLabel = `performance`;
+                  messageText = `${ev.metricName || ''}: ${ev.value || 0}ms`;
+                } else {
+                  typeLabel = `console [${ev.level || 'log'}]`;
+                  if (ev.level === 'error' || ev.level === 'exception') {
+                    badgeClass = 'badge-error';
+                  }
+                  messageText = ev.message || '';
+                }
+
+                return `
+                  <div class="event">
+                    <div class="event-time">${time}</div>
+                    <div class="event-badge ${badgeClass}">${typeLabel}</div>
+                    <div class="event-details">${messageText}</div>
+                  </div>
+                `;
+              }).join('')}
+
+              ${comments.length > 0 ? `
+                <div class="section-title">Team Annotations & Comments</div>
+                <div class="comments-list">
+                  ${comments.map(c => `
+                    <div class="comment-item">
+                      <div class="comment-author">${c.author} <span class="comment-time">(${c.timestamp})</span></div>
+                      <div style="margin-top: 4px;">${c.text}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 800);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      return;
+    }
+
+    const reportContent = `# 🛠️ DebugBit AI Diagnostic Bug Report
+- **Session ID**: \`${selectedSessionId}\`
+- **Timestamp**: ${new Date().toISOString()}
+- **Status**: Critical Failure (Crashed)
+- **Target Route**: \`/checkout/payment\`
+
+## 🧠 AI Root-Cause Analysis
+- **Severity Level**: Critical Failure
+- **Error Signature**: \`TypeError: Cannot read properties of undefined (reading 'paymentMethod')\`
+- **Analysis**: A request was fired to \`POST /v1/checkout/payment\` returning a \`500 Internal Server Error\` status. The React payment handler expected a valid Stripe token block but received null due to legacy browser bindings.
+
+## 📋 Captured Telemetry Event Trace Logs
+${events.map(evt => {
+  if (evt.category === 'network') {
+    return `- [${evt.timestamp}] [NETWORK] ${evt.method} ${evt.url} -> Status ${evt.status} (${evt.duration || 120}ms)`;
+  } else if (evt.category === 'performance') {
+    return `- [${evt.timestamp}] [PERFORMANCE] ${evt.metricName}: ${evt.value}ms`;
+  } else {
+    return `- [${evt.timestamp}] [CONSOLE] [${evt.level || 'log'}] ${evt.message}`;
+  }
+}).join('\n')}
+
+## 💡 Resolution Recommendation
+Add conditional check (optional chaining) inside wrapping payment checkout trigger handler inside \`src/components/CheckoutButton.tsx\` to safely process missing Stripe tokens.
+
+## 📝 Team Annotations & Comments
+${comments.map(c => `- **${c.author}** (${c.timestamp}): ${c.text}`).join('\n') || 'No annotations added yet.'}
+
+---
+*Report compiled automatically by DebugBit AI Copilot.*
+`;
+
+    const blob = new Blob([reportContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `debugbit-report-${selectedSessionId.slice(0, 8)}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const runAiInvestigation = () => {
@@ -118,6 +453,62 @@ Add conditional check inside wrapping handler or utilize updated React standard 
 
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-500 font-mono">Stream: {selectedSessionId}</span>
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#7c3aed]/10 border border-[#7c3aed]/20 hover:bg-[#7c3aed]/20 text-[#a78bfa] text-xs font-bold transition-all cursor-pointer"
+              title="Export session diagnostics in multiple formats"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export Report</span>
+              <span className="text-[8px] opacity-60 ml-0.5">▼</span>
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-[#0b0f19] border border-[#1f2937] rounded-xl shadow-2xl py-1 z-50 animate-fadeIn">
+                <button
+                  onClick={() => {
+                    exportBugReport('pdf');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-[#111827] transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>Print / Save PDF (.pdf)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    exportBugReport('markdown');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-[#111827] transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#7c3aed]" />
+                  <span>Markdown Report (.md)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    exportBugReport('csv');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-[#111827] transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Structured CSV (.csv)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    exportBugReport('json');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-[#111827] transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Raw JSON Payload (.json)</span>
+                </button>
+              </div>
+            )}
+          </div>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
             Failure
@@ -138,6 +529,14 @@ Add conditional check inside wrapping handler or utilize updated React standard 
               }`}
             >
               Event Trace Logs
+            </button>
+            <button
+              onClick={() => setActiveTab('timeline')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                activeSubTab === 'timeline' ? 'bg-[#7c3aed] text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Visual Timeline
             </button>
             <button
               onClick={() => setActiveTab('diagnose')}
@@ -214,6 +613,11 @@ Add conditional check inside wrapping handler or utilize updated React standard 
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Tab 1b: Chronological Visual Node Tree Timeline */}
+          {activeSubTab === 'timeline' && (
+            <TimelineSequencer events={events} />
           )}
 
           {/* Tab 2: AI Report Investigator */}

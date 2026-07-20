@@ -41,8 +41,8 @@ export default function Sidebar({
       {/* Sidebar Header Brand */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-[#1f2937]">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#4c1d95] flex items-center justify-center shadow-lg shadow-[#7c3aed]/10 border border-[#a78bfa]/20">
-            <Activity className="h-5 w-5 text-white animate-pulse" />
+          <div className="h-9 w-12 shrink-0 rounded-xl bg-[#7c3aed]/5 border border-[#7c3aed]/25 flex items-center justify-center shadow-lg shadow-[#7c3aed]/5 overflow-hidden">
+            <img src="/logo.png" alt="DebugBit Brand Logo" className="h-full w-full object-cover rounded-lg" />
           </div>
           {!isSidebarCollapsed && (
             <span className="font-outfit text-lg font-extrabold tracking-tight text-white">

@@ -33,8 +33,8 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full border-b border-gray-800/60 bg-[#030712]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="bg-[#7c3aed]/15 border border-[#7c3aed]/30 p-2 rounded-xl flex items-center justify-center shadow-lg shadow-[#7c3aed]/10">
-              <Brain className="h-5 w-5 text-[#a78bfa]" />
+            <div className="bg-[#7c3aed]/5 border border-[#7c3aed]/25 p-1 rounded-xl flex items-center justify-center shadow-lg shadow-[#7c3aed]/5 overflow-hidden h-9 w-12">
+              <img src="/logo.png" alt="DebugBit Brand Logo" className="h-full w-full object-cover rounded-lg" />
             </div>
             <div>
               <span className="font-outfit font-extrabold text-lg text-white tracking-tight">

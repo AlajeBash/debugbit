@@ -28,6 +28,17 @@ interface SyncPayload {
   performance?: Array<{ metricName: string; value: number; timestamp: number }>;
 }
 
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Content-Encoding, Authorization, x-api-key',
+    },
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     let body: SyncPayload;
@@ -51,6 +62,27 @@ export async function POST(req: NextRequest) {
         { error: 'Missing required parameters: apiKey, session.id' },
         { status: 400 }
       );
+    }
+
+    // --- Developer Testing & Offline Sandbox Fallback ---
+    const isPlaceholderSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const isDevApiKey = apiKey && (apiKey.startsWith('debugbit_dev_') || apiKey === 'debugbit_dev_key_12345');
+
+    if (isPlaceholderSupabase || isDevApiKey || process.env.NODE_ENV === 'development') {
+      console.log(`[Sync Ingest API] Running in Sandbox Fallback Mode. Saving session ${session.id} in-memory...`);
+      const { upsertLocalSession } = await import('../../../lib/localStore');
+      upsertLocalSession(session, logs || [], network || [], performance || []);
+
+      return NextResponse.json({
+        status: 'success',
+        syncedSessionId: session.id,
+        recordsSynced: {
+          logs: (logs || []).length,
+          network: (network || []).length,
+          performance: (performance || []).length
+        },
+        mode: 'sandbox_fallback'
+      });
     }
 
     // Secure Ingestion validation: Validate payload structure against Zod schema rules

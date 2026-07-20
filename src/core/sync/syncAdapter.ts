@@ -1,7 +1,8 @@
 import { db } from '../storage/dexieStore';
 import { scrubTelemetry } from './scrubber';
 
-const DEFAULT_SAAS_GATEWAY_URL = 'https://debugbit-saas-platform.vercel.app'; // Customizable default endpoint
+const DEFAULT_SAAS_GATEWAY_URL = 'http://localhost:3000'; // Standard local developer loop gateway
+const DEFAULT_SAAS_PROJECT_KEY = 'debugbit_dev_key_12345'; // Standard sandbox bypass key
 
 /**
  * Resolves whether the user has toggled "Strict Local-Only Privacy Mode" inside extension options.
@@ -25,7 +26,20 @@ export async function getSaaSEndpoint(): Promise<string> {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
     try {
       const result = await chrome.storage.local.get('saas_gateway_url');
-      return result.saas_gateway_url || DEFAULT_SAAS_GATEWAY_URL;
+      let url = result.saas_gateway_url;
+      if (url && url.trim() !== '') {
+        url = url.trim();
+        // If points to Vercel production, bypass and use default localhost
+        if (url.includes('vercel.app')) {
+          return DEFAULT_SAAS_GATEWAY_URL;
+        }
+        // Auto-prepend http:// if scheme is missing
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = `http://${url}`;
+        }
+        return url;
+      }
+      return DEFAULT_SAAS_GATEWAY_URL;
     } catch {
       return DEFAULT_SAAS_GATEWAY_URL;
     }
@@ -40,12 +54,15 @@ export async function getProjectApiKey(): Promise<string | null> {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
     try {
       const result = await chrome.storage.local.get('saas_project_api_key');
-      return result.saas_project_api_key || null;
+      if (result.saas_project_api_key && result.saas_project_api_key.trim() !== '') {
+        return result.saas_project_api_key;
+      }
+      return DEFAULT_SAAS_PROJECT_KEY;
     } catch {
-      return null;
+      return DEFAULT_SAAS_PROJECT_KEY;
     }
   }
-  return null;
+  return DEFAULT_SAAS_PROJECT_KEY;
 }
 
 /**

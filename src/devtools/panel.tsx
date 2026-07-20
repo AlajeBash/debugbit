@@ -17,7 +17,8 @@ import {
   Key,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  Cloud
 } from 'lucide-react';
 
 // --- Local Sub-Component: Dynamic Markdown Viewer ---
@@ -353,9 +354,16 @@ export const Panel: React.FC = () => {
 
   const [rightTab, setRightTab] = useState<'inspector' | 'ai'>('inspector');
   const [showSettings, setShowSettings] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // SaaS Integration States
+  const [saasUrlInput, setSaasUrlInput] = useState('http://localhost:3000');
+  const [saasApiKeyInput, setSaasApiKeyInput] = useState('debugbit_dev_key_12345');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
 
   // Load subscriptions and initialize
   useEffect(() => {
@@ -370,14 +378,58 @@ export const Panel: React.FC = () => {
     }
   }, [geminiKey]);
 
-  // Save API Key helper
-  const handleSaveApiKey = async () => {
+  // Load SaaS parameters from local Chrome storage
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['saas_gateway_url', 'saas_project_api_key']).then((data) => {
+        if (data.saas_gateway_url) {
+          setSaasUrlInput(data.saas_gateway_url);
+        }
+        if (data.saas_project_api_key) {
+          setSaasApiKeyInput(data.saas_project_api_key);
+        }
+      });
+    }
+  }, []);
+
+  // Save Settings helper (Gemini + SaaS configurations)
+  const handleSaveSettings = async () => {
     try {
       await setGeminiKey(apiKeyInput.trim());
+      
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({
+          saas_gateway_url: saasUrlInput.trim(),
+          saas_project_api_key: saasApiKeyInput.trim()
+        });
+      }
+      
       setShowSettings(false);
       setErrorMessage(null);
     } catch (err: any) {
-      setErrorMessage('Failed to save API Key.');
+      setErrorMessage('Failed to save settings.');
+    }
+  };
+
+  // Synchronize Active Session directly to local SaaS Cockpit
+  const handleSyncToSaaS = async () => {
+    if (!activeSessionId) return;
+    setIsSyncing(true);
+    setErrorMessage(null);
+    setSyncSuccessMessage(null);
+    try {
+      const { syncSessionToSaaS } = await import('../core/sync/syncAdapter');
+      const success = await syncSessionToSaaS(activeSessionId);
+      if (success) {
+        setSyncSuccessMessage(`Session successfully synchronized with SaaS Cockpit!`);
+        setTimeout(() => setSyncSuccessMessage(null), 4000);
+      } else {
+        setErrorMessage('SaaS Sync failed. Verify that your SaaS local server (http://localhost:3000) is active.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Sync error encountered.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -401,7 +453,7 @@ export const Panel: React.FC = () => {
   };
 
   // Handle formatted file exports
-  const handleExport = (format: 'markdown' | 'json') => {
+  const handleExport = (format: 'markdown' | 'json' | 'csv' | 'pdf') => {
     if (unifiedEvents.length === 0) return;
 
     let content = '';
@@ -416,6 +468,245 @@ export const Panel: React.FC = () => {
       }, null, 2);
       mimeType = 'application/json';
       fileName += '.json';
+    } else if (format === 'csv') {
+      const headers = ['Timestamp', 'Category', 'Type_Method', 'Details_Message', 'Status', 'Duration_ms'];
+      const rows = unifiedEvents.map(ev => {
+        const time = new Date(ev.timestamp).toLocaleString();
+        if (ev.category === 'network') {
+          const net = ev.data;
+          return [time, 'NETWORK', net.method, net.url, net.status, Math.round(net.duration)];
+        } else {
+          const cons = ev.data;
+          return [time, 'CONSOLE', cons.type.toUpperCase(), cons.message, '', ''];
+        }
+      });
+      content = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      mimeType = 'text/csv';
+      fileName += '.csv';
+    } else if (format === 'pdf') {
+      // Create a print-optimized window
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow popups to export the PDF report.');
+        return;
+      }
+
+      const reportHtml = `
+        <html>
+          <head>
+            <title>AI Debugging Copilot Report - Session ${activeSessionId}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+            <style>
+              body {
+                font-family: 'Inter', sans-serif;
+                background-color: #030712;
+                color: #f3f4f6;
+                padding: 40px;
+                margin: 0;
+              }
+              .container {
+                max-width: 900px;
+                margin: 0 auto;
+                border: 1px solid #1f2937;
+                border-radius: 16px;
+                background: #0b0f19;
+                padding: 32px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+              }
+              .header {
+                border-bottom: 2px solid #1f2937;
+                padding-bottom: 24px;
+                margin-bottom: 24px;
+              }
+              .title {
+                font-size: 24px;
+                font-weight: 800;
+                margin: 0;
+                background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              }
+              .meta {
+                margin-top: 12px;
+                font-size: 13px;
+                color: #9ca3af;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+              }
+              .meta-item {
+                font-family: 'JetBrains Mono', monospace;
+              }
+              .section-title {
+                font-size: 18px;
+                font-weight: 700;
+                margin: 32px 0 16px 0;
+                color: #e5e7eb;
+                border-bottom: 1px solid #1f2937;
+                padding-bottom: 8px;
+              }
+              .event {
+                padding: 12px;
+                border-bottom: 1px solid #111827;
+                font-size: 12px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+              }
+              .event-time {
+                font-family: 'JetBrains Mono', monospace;
+                color: #6b7280;
+                min-width: 80px;
+              }
+              .event-badge {
+                font-size: 9px;
+                text-transform: uppercase;
+                font-weight: 800;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: 'JetBrains Mono', monospace;
+              }
+              .badge-network {
+                background: rgba(59, 130, 246, 0.15);
+                color: #60a5fa;
+                border: 1px solid rgba(59, 130, 246, 0.25);
+              }
+              .badge-console {
+                background: rgba(245, 158, 11, 0.15);
+                color: #fbbf24;
+                border: 1px solid rgba(245, 158, 11, 0.25);
+              }
+              .badge-error {
+                background: rgba(239, 68, 68, 0.15);
+                color: #f87171;
+                border: 1px solid rgba(239, 68, 68, 0.25);
+              }
+              .event-details {
+                flex: 1;
+                font-family: 'JetBrains Mono', monospace;
+                word-break: break-all;
+              }
+              .stack {
+                background: #030712;
+                border: 1px solid #1f2937;
+                border-radius: 8px;
+                padding: 8px;
+                margin-top: 8px;
+                font-size: 10px;
+                color: #f87171;
+                white-space: pre-wrap;
+              }
+              @media print {
+                body {
+                  background: white !important;
+                  color: #000 !important;
+                  padding: 20px;
+                }
+                .container {
+                  border: none;
+                  box-shadow: none;
+                  padding: 0;
+                  background: white;
+                }
+                .title {
+                  background: none;
+                  -webkit-text-fill-color: initial;
+                  color: #000;
+                }
+                .meta-item {
+                  color: #4b5563;
+                }
+                .event {
+                  border-bottom: 1px solid #e5e7eb;
+                }
+                .stack {
+                  background: #f9fafb;
+                  border: 1px solid #e5e7eb;
+                  color: #dc2626;
+                }
+                .badge-network {
+                  background: #eff6ff;
+                  color: #1d4ed8;
+                  border: 1px solid #bfdbfe;
+                }
+                .badge-console {
+                  background: #fffbeb;
+                  color: #b45309;
+                  border: 1px solid #fde68a;
+                }
+                .badge-error {
+                  background: #fef2f2;
+                  color: #b91c1c;
+                  border: 1px solid #fecaca;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="title">AI Debugging Copilot Diagnostic Report</div>
+                <div class="meta">
+                  <div class="meta-item">Session ID: ${activeSessionId}</div>
+                  <div class="meta-item">Generated: ${new Date().toLocaleString()}</div>
+                  <div class="meta-item">Total Captured Events: ${unifiedEvents.length}</div>
+                </div>
+              </div>
+
+              <div class="section-title">Timeline Event Trace Log</div>
+              ${unifiedEvents.map(ev => {
+                const time = new Date(ev.timestamp).toLocaleTimeString();
+                let badgeClass = 'badge-console';
+                let typeLabel = 'console';
+                let messageText = '';
+                let extraContent = '';
+
+                if (ev.category === 'network') {
+                  const net = ev.data;
+                  badgeClass = 'badge-network';
+                  typeLabel = `network [${net.method}]`;
+                  messageText = `${net.url} - Status: ${net.status} (${Math.round(net.duration)}ms)`;
+                } else {
+                  const cons = ev.data;
+                  typeLabel = `console [${cons.type}]`;
+                  if (cons.type === 'error') {
+                    badgeClass = 'badge-error';
+                  }
+                  messageText = cons.message;
+                  if (cons.stack) {
+                    extraContent = `<pre class="stack">${cons.stack}</pre>`;
+                  }
+                }
+
+                return `
+                  <div class="event">
+                    <div class="event-time">${time}</div>
+                    <div class="event-badge ${badgeClass}">${typeLabel}</div>
+                    <div class="event-details">
+                      ${messageText}
+                      ${extraContent}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 800);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      return;
     } else {
       content = `# AI Debugging Copilot Report\n\n`;
       content += `Generated on: ${new Date().toLocaleString()}\n`;
@@ -537,13 +828,75 @@ export const Panel: React.FC = () => {
           <div className="h-4 w-px bg-dark-900" />
 
           {/* Actions */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={unifiedEvents.length === 0}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-dark-200 hover:text-white bg-dark-900/60 border border-dark-800 hover:border-dark-700 disabled:opacity-40 disabled:pointer-events-none rounded-lg transition-all duration-150 cursor-pointer"
+            >
+              <Download className="h-3 w-3" />
+              <span>Export Report</span>
+              <span className="text-[7px] opacity-60 ml-0.5">▼</span>
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1.5 w-44 bg-dark-950 border border-dark-800 rounded-lg shadow-2xl py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-100">
+                <button
+                  onClick={() => {
+                    handleExport('pdf');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[10px] text-dark-200 hover:text-white hover:bg-dark-900 transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span>Print / Save PDF (.pdf)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport('markdown');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[10px] text-dark-200 hover:text-white hover:bg-dark-900 transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                  <span>Markdown Report (.md)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport('csv');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[10px] text-dark-200 hover:text-white hover:bg-dark-900 transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Structured CSV Trace (.csv)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport('json');
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[10px] text-dark-200 hover:text-white hover:bg-dark-900 transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <span>Raw JSON Payload (.json)</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
-            onClick={() => handleExport('markdown')}
-            disabled={unifiedEvents.length === 0}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-dark-200 hover:text-white bg-dark-900/60 border border-dark-800 hover:border-dark-700 disabled:opacity-40 disabled:pointer-events-none rounded-lg transition-all duration-150 cursor-pointer"
+            onClick={handleSyncToSaaS}
+            disabled={!activeSessionId || isSyncing}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-white rounded-lg transition-all duration-150 cursor-pointer ${
+              isSyncing 
+                ? 'bg-emerald-650 animate-pulse cursor-wait' 
+                : 'bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-900/20'
+            }`}
+            title="Sync this live telemetry session to the SaaS Developer Cockpit dashboard"
           >
-            <Download className="h-3 w-3" />
-            <span>Export Report</span>
+            <Cloud className={`h-3 w-3 ${isSyncing ? 'animate-bounce' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync to Cockpit'}</span>
           </button>
 
           <button
@@ -559,37 +912,89 @@ export const Panel: React.FC = () => {
 
       {/* Settings Overlay Block */}
       {showSettings && (
-        <div className="bg-dark-900 border-b border-dark-850 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in relative z-30">
-          <div className="flex items-start gap-2.5 max-w-md">
-            <Key className="h-4 w-4 text-brand-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="text-[11px] font-bold text-dark-100 uppercase tracking-wider">Configure Gemini API Key</h4>
-              <p className="text-[10px] text-dark-500 leading-normal mt-0.5">
-                Saved locally on your machine via Chrome local storage. This key queries Gemini 1.5 Flash directly from your panel context.
-              </p>
+        <div className="bg-dark-900 border-b border-dark-850 px-6 py-4 flex flex-col gap-4 animate-fade-in relative z-30">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
+            {/* Gemini API Key */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-brand-400 uppercase tracking-wider flex items-center gap-1 select-none">
+                <Key className="h-3 w-3" />
+                <span>Gemini API Key</span>
+              </label>
+              <div className="relative flex items-center bg-dark-950 border border-dark-800 rounded-lg overflow-hidden focus-within:border-brand-500/50 transition-colors duration-150">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  placeholder="AIzaSy..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  className="pl-3 pr-8 py-1.5 font-mono text-[10px] text-dark-200 placeholder-dark-600 bg-transparent outline-none w-full"
+                />
+                <button
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2 text-dark-500 hover:text-dark-300 transition-colors duration-150 cursor-pointer"
+                >
+                  {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+              </div>
+              <span className="text-[9px] text-dark-500 leading-normal select-none">
+                Saved locally via Chrome local storage. Queries Gemini directly from panel context.
+              </span>
             </div>
+
+            {/* SaaS Gateway URL */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 select-none">
+                <Cloud className="h-3 w-3" />
+                <span>SaaS Gateway URL</span>
+              </label>
+              <div className="relative flex items-center bg-dark-950 border border-dark-800 rounded-lg overflow-hidden focus-within:border-emerald-500/50 transition-colors duration-150">
+                <input
+                  type="text"
+                  placeholder="http://localhost:3000"
+                  value={saasUrlInput}
+                  onChange={(e) => setSaasUrlInput(e.target.value)}
+                  className="px-3 py-1.5 font-mono text-[10px] text-dark-200 placeholder-dark-600 bg-transparent outline-none w-full"
+                />
+              </div>
+              <span className="text-[9px] text-dark-500 leading-normal select-none">
+                Target endpoint for synchronization. Use <code>http://localhost:3000</code> for local dev.
+              </span>
+            </div>
+
+            {/* SaaS Project Key */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1 select-none">
+                <Database className="h-3 w-3" />
+                <span>SaaS Project API Key</span>
+              </label>
+              <div className="relative flex items-center bg-dark-950 border border-dark-800 rounded-lg overflow-hidden focus-within:border-purple-500/50 transition-colors duration-150">
+                <input
+                  type="text"
+                  placeholder="debugbit_dev_key_12345"
+                  value={saasApiKeyInput}
+                  onChange={(e) => setSaasApiKeyInput(e.target.value)}
+                  className="px-3 py-1.5 font-mono text-[10px] text-dark-200 placeholder-dark-600 bg-transparent outline-none w-full"
+                />
+              </div>
+              <span className="text-[9px] text-dark-500 leading-normal select-none">
+                Verifies payload ownership. Use <code>debugbit_dev_key_12345</code> for fast sandbox.
+              </span>
+            </div>
+
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative flex items-center bg-dark-950 border border-dark-800 rounded-lg overflow-hidden focus-within:border-brand-500/50 transition-colors duration-150">
-              <input
-                type={showKey ? 'text' : 'password'}
-                placeholder="AIzaSy..."
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                className="pl-3 pr-8 py-1 font-mono text-[10px] text-dark-200 placeholder-dark-600 bg-transparent outline-none w-[200px]"
-              />
-              <button
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 text-dark-500 hover:text-dark-300 transition-colors duration-150 cursor-pointer"
-              >
-                {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </button>
-            </div>
+
+          <div className="flex justify-end gap-2 border-t border-dark-850 pt-3">
             <button
-              onClick={handleSaveApiKey}
-              className="px-3 py-1 text-[10px] font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg transition-all duration-150 cursor-pointer"
+              onClick={() => setShowSettings(false)}
+              className="px-3 py-1 text-[10px] font-semibold text-dark-400 hover:text-dark-200 rounded-lg transition-all duration-150 cursor-pointer"
             >
-              Save Key
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveSettings}
+              className="px-4 py-1 text-[10px] font-bold text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-lg shadow-md shadow-brand-500/10 transition-all duration-150 cursor-pointer"
+            >
+              Save All Settings
             </button>
           </div>
         </div>
@@ -604,6 +1009,22 @@ export const Panel: React.FC = () => {
           </div>
           <button 
             onClick={() => setErrorMessage(null)}
+            className="text-dark-400 hover:text-dark-200 font-bold px-1.5 cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Sync Success Message Box */}
+      {syncSuccessMessage && (
+        <div className="bg-emerald-950/20 border-b border-emerald-900/30 px-4 py-2 flex items-center justify-between gap-3 text-emerald-400 font-mono text-[10px] animate-fade-in relative z-20">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>{syncSuccessMessage}</span>
+          </div>
+          <button 
+            onClick={() => setSyncSuccessMessage(null)}
             className="text-dark-400 hover:text-dark-200 font-bold px-1.5 cursor-pointer"
           >
             ×

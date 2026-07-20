@@ -7,6 +7,7 @@ import TelemetryStreamView from '@/components/dashboard/TelemetryStreamView';
 import AiCorrelationView from '@/components/dashboard/AiCorrelationView';
 import SettingsView from '@/components/dashboard/SettingsView';
 import BillingView from '@/components/dashboard/BillingView';
+import ChatConsole from '@/components/dashboard/ChatConsole';
 
 // --- Types & Interfaces ---
 
@@ -206,10 +207,59 @@ export default function DashboardController() {
   const [sessions, setSessions] = useState<MockSession[]>(INITIAL_SESSIONS);
   const [events, setEvents] = useState<Record<string, TelemetryEvent[]>>(INITIAL_EVENTS);
   const [comments, setComments] = useState<Record<string, Comment[]>>(INITIAL_COMMENTS);
-  const [apiKey, setApiKey] = useState<string>('db_sync_live_f3972a91b2c8c4de82e0e09');
+  const [apiKey, setApiKey] = useState<string>('debugbit_dev_key_12345'); // Standard local developer API key
   
   // Real-Time Simulator toggle state
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
+
+  // --- Real-Time Sync Polling from Chrome Extension ---
+  useEffect(() => {
+    const fetchLiveSessions = async () => {
+      try {
+        const res = await fetch('/api/sessions');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === 'success' && data.sessions && data.sessions.length > 0) {
+          const liveSessionsList = data.sessions;
+          
+          setSessions(prevSessions => {
+            const liveIds = new Set(liveSessionsList.map((s: any) => s.id));
+            const filteredPrev = prevSessions.filter(s => !liveIds.has(s.id));
+            return [...liveSessionsList, ...filteredPrev];
+          });
+
+          setEvents(prevEvents => {
+            const nextEvents = { ...prevEvents };
+            liveSessionsList.forEach((s: any) => {
+              if (s.events) {
+                nextEvents[s.id] = s.events;
+              }
+            });
+            return nextEvents;
+          });
+
+          // Auto-disable mock event simulator and select the real synced session upon ingestion
+          setIsSimulating(false);
+          setSelectedSessionId(currentId => {
+            const isMockSession = !currentId || 
+                                  currentId === 'f87a329c-8b21-4cf1-97ba-a09e13d964f1' || 
+                                  currentId === 'b11d9a24-7cc9-411a-8bde-d510287ffab2' || 
+                                  currentId === 'a059bc1a-61f2-49da-bf32-e09211aa128d';
+            if (isMockSession && liveSessionsList[0]?.id) {
+              return liveSessionsList[0].id;
+            }
+            return currentId;
+          });
+        }
+      } catch (err) {
+        console.error('[Dashboard] Live sessions fetch failed:', err);
+      }
+    };
+
+    fetchLiveSessions();
+    const interval = setInterval(fetchLiveSessions, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- Live WebSocket Simulation Hook ---
   useEffect(() => {
@@ -371,6 +421,9 @@ export default function DashboardController() {
           )}
         </main>
       </div>
+
+      {/* Floating AI Copilot Console */}
+      <ChatConsole />
     </div>
   );
 }
