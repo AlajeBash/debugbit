@@ -40,18 +40,26 @@ export default function TelemetryStreamView({
 }: TelemetryStreamViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [envFilter, setEnvFilter] = useState<'all' | 'prod' | 'staging' | 'dev'>('all');
+  const [mounted, setMounted] = useState(false);
+  const [metricsTick, setMetricsTick] = useState(0);
   
   // Canvases refs for real-time live sparklines
   const epsCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const latencyCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const bandwidthCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Sparkline data buffers
-  const epsData = useRef<number[]>(Array(30).fill(0).map(() => Math.random() * 2));
-  const latencyData = useRef<number[]>(Array(30).fill(120).map(() => 100 + Math.random() * 60));
-  const bandwidthData = useRef<number[]>(Array(30).fill(15).map(() => 10 + Math.random() * 12));
+  // Sparkline data buffers - initialized to static constants to prevent React server-client hydration mismatches
+  const epsData = useRef<number[]>(Array(30).fill(0.35));
+  const latencyData = useRef<number[]>(Array(30).fill(120));
+  const bandwidthData = useRef<number[]>(Array(30).fill(15.4));
 
   useEffect(() => {
+    setMounted(true);
+    // Seed initial client-side random data safely upon mount
+    epsData.current = Array(30).fill(0).map(() => Math.random() * 2);
+    latencyData.current = Array(30).fill(120).map(() => 100 + Math.random() * 60);
+    bandwidthData.current = Array(30).fill(15).map(() => 10 + Math.random() * 12);
+
     const drawSparkline = (canvas: HTMLCanvasElement | null, data: number[], color: string, fillGradient: string[]) => {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -115,6 +123,8 @@ export default function TelemetryStreamView({
       drawSparkline(epsCanvasRef.current, epsData.current, '#f87171', ['rgba(248, 113, 113, 0.15)', 'rgba(248, 113, 113, 0)']);
       drawSparkline(latencyCanvasRef.current, latencyData.current, '#a78bfa', ['rgba(167, 139, 250, 0.15)', 'rgba(167, 139, 250, 0)']);
       drawSparkline(bandwidthCanvasRef.current, bandwidthData.current, '#34d399', ['rgba(52, 211, 153, 0.15)', 'rgba(52, 211, 153, 0)']);
+      
+      setMetricsTick(t => t + 1);
     }, 800);
 
     // Initial draw

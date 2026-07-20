@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Activity
 } from 'lucide-react';
+import { UserButton } from '@clerk/nextjs';
 
 interface SidebarProps {
   activeTab: string;
@@ -76,6 +77,26 @@ export default function Sidebar({
           );
         })}
       </nav>
+
+      {/* User Profile Block */}
+      <div className="p-4 border-t border-[#1f2937] bg-[#070a12]/20 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <UserButton 
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "h-9 w-9 rounded-xl border border-[#1f2937] hover:border-[#7c3aed] transition-colors"
+              }
+            }}
+          />
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col text-left overflow-hidden">
+              <span className="text-xs font-bold text-white truncate">Developer Account</span>
+              <span className="text-[10px] text-gray-500 font-medium truncate">Session Active</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Collapse Trigger Footer */}
       <div className="p-4 border-t border-[#1f2937] bg-[#070a12]/50 flex justify-end">
