@@ -30,7 +30,8 @@ export const config = {
   matcher: [
     // Protect all dashboard routes while allowing public routes and webhooks
     '/((?!_next|[^?]*\\.(?:html|css|js|gif|svg|png|jpeg|jpg|webp|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)'
+    '/(api|trpc)(.*)',
+    '/__clerk/:path*'
   ],
 };
 

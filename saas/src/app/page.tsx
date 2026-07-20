@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { 
   Brain, 
   Shield, 
@@ -51,19 +52,30 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-xs font-semibold text-gray-300 hover:text-white transition duration-200"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-xs font-bold text-white rounded-xl transition duration-300 shadow-md shadow-[#7c3aed]/25 hover:scale-[1.02] transform"
-            >
-              Get Started Free
-              <ArrowRight className="h-3 w-3" />
-            </Link>
+            <SignedOut>
+              <Link
+                href="/dashboard"
+                className="text-xs font-semibold text-gray-300 hover:text-white transition duration-200"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-xs font-bold text-white rounded-xl transition duration-300 shadow-md shadow-[#7c3aed]/25 hover:scale-[1.02] transform"
+              >
+                Get Started Free
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </SignedOut>
+            <SignedIn>
+              <Link
+                href="/dashboard"
+                className="text-xs font-semibold text-[#a78bfa] hover:text-white transition duration-200"
+              >
+                Go to Dashboard
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
           </div>
         </div>
       </header>
