@@ -19,6 +19,7 @@ import {
   Plus
 } from 'lucide-react';
 import TimelineSequencer from './TimelineSequencer';
+import { findKnowledgeBaseMatch } from '../../lib/knowledgeBase';
 
 interface TelemetryEvent {
   id: string;
@@ -64,6 +65,7 @@ export default function AiCorrelationView({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showKnowledgeDiff, setShowKnowledgeDiff] = useState(false);
 
   const handleAddComment = () => {
     if (!commentInput.trim()) return;
@@ -708,6 +710,75 @@ Add conditional check inside wrapping handler or utilize updated React standard 
 
         {/* Right Column (5 units): Team Chat / Event Comments Panel */}
         <div className="lg:col-span-5 space-y-6">
+          {(() => {
+            const primaryErrorEvent = events.find(evt => evt.level === 'exception' || evt.level === 'error' || evt.status === 500);
+            const activeErrorSignature = primaryErrorEvent ? (primaryErrorEvent.message || `HTTP ${primaryErrorEvent.status} error`) : '';
+            const activeRoute = primaryErrorEvent && primaryErrorEvent.category === 'network' 
+              ? `${primaryErrorEvent.method || 'GET'} ${primaryErrorEvent.url || ''}` 
+              : '';
+
+            const knowledgeMatch = findKnowledgeBaseMatch(activeErrorSignature, activeRoute);
+
+            if (!knowledgeMatch) return null;
+
+            return (
+              <div className="bg-gradient-to-br from-indigo-950/20 to-purple-950/10 border border-indigo-500/20 p-6 rounded-3xl shadow-xl relative overflow-hidden animate-fadeIn space-y-3">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex gap-3 items-center mb-1">
+                  <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Historical AI Reference Match</h4>
+                  <span className="ml-auto text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    {Math.round((knowledgeMatch.score || 0.8) * 100)}% Match
+                  </span>
+                </div>
+                <h5 className="text-sm font-extrabold text-white tracking-tight">{knowledgeMatch.title}</h5>
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  <strong className="text-indigo-300 font-semibold uppercase tracking-wide text-[9px] block mb-1">Root Cause Summary:</strong>
+                  {knowledgeMatch.rootCause}
+                </p>
+                <div className="flex items-center justify-between text-[10px] text-gray-500 border-t border-indigo-500/10 pt-2.5">
+                  <span>Resolved By: <strong className="text-gray-300">{knowledgeMatch.resolvedBy}</strong></span>
+                  <span>Date: <strong className="text-gray-300">{knowledgeMatch.resolvedAt}</strong></span>
+                </div>
+                <div className="pt-2">
+                  <button 
+                    onClick={() => setShowKnowledgeDiff(!showKnowledgeDiff)}
+                    className="w-full px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Code2 className="h-4 w-4" />
+                    {showKnowledgeDiff ? 'Hide Resolved Git Diff' : 'View Resolved Git Diff'}
+                  </button>
+                </div>
+
+                {/* Collapsible previous fix git diff */}
+                {showKnowledgeDiff && (
+                  <div className="mt-3 bg-[#030712] border border-indigo-500/20 rounded-xl overflow-hidden font-mono text-[10px] animate-fadeIn max-h-[250px] overflow-y-auto pr-1">
+                    <div className="bg-[#070a12] border-b border-[#1f2937] px-3 py-2 text-gray-400 text-[9px] font-semibold flex justify-between items-center">
+                      <span>Previous Resolving Git Diff</span>
+                      <span className="text-indigo-400 font-bold uppercase tracking-wider text-[8px]">Proprietary Patch</span>
+                    </div>
+                    <pre className="p-3 text-gray-300 whitespace-pre-wrap leading-relaxed">
+                      {knowledgeMatch.gitDiff.split('\n').map((line, lIdx) => {
+                        const isAddition = line.startsWith('+');
+                        const isDeletion = line.startsWith('-');
+                        return (
+                          <div 
+                            key={lIdx} 
+                            className={`px-1 rounded-sm ${
+                              isAddition ? 'bg-emerald-950/40 text-emerald-400' :
+                              isDeletion ? 'bg-red-950/40 text-red-400' : ''
+                            }`}
+                          >
+                            {line}
+                          </div>
+                        );
+                      })}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div className="bg-[#0b0f19] border border-[#1f2937] rounded-3xl p-6 shadow-xl space-y-4">
             <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <Share2 className="h-4 w-4 text-[#a78bfa]" />

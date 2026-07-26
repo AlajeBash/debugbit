@@ -13,6 +13,7 @@ import {
   Plus,
   Play
 } from 'lucide-react';
+import { calculatePerformanceBaselines, detectRegressions } from '../../utils/regressionAnalyzer';
 
 interface MockSession {
   id: string;
@@ -27,6 +28,7 @@ interface MockSession {
 
 interface TelemetryStreamViewProps {
   sessions: MockSession[];
+  events: Record<string, any[]>;
   selectedSessionId: string | null;
   setSelectedSessionId: (id: string) => void;
   setActiveTab: (tab: string) => void;
@@ -34,6 +36,7 @@ interface TelemetryStreamViewProps {
 
 export default function TelemetryStreamView({
   sessions,
+  events,
   selectedSessionId,
   setSelectedSessionId,
   setActiveTab
@@ -203,6 +206,65 @@ export default function TelemetryStreamView({
           </div>
         </div>
       </div>
+      
+      {/* 🚀 Predictive Regression Alert Center */}
+      {(() => {
+        const fullSessions = sessions.map(s => ({
+          ...s,
+          events: events[s.id] || []
+        })) as any[];
+        
+        const baselines = calculatePerformanceBaselines(fullSessions);
+        const allRegressions = fullSessions
+          .map(s => ({ session: s, regressions: detectRegressions(s, baselines) }))
+          .filter(item => item.regressions.length > 0);
+
+        if (allRegressions.length === 0) return null;
+
+        return (
+          <div className="bg-gradient-to-r from-red-950/20 to-yellow-950/10 border border-red-500/20 p-6 rounded-3xl relative overflow-hidden shadow-xl animate-fadeIn">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex gap-4 items-start">
+              <div className="p-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-red-400">
+                <ShieldAlert className="h-6 w-6 animate-pulse" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-extrabold text-white tracking-tight uppercase">Predictive Regression Alerts</h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/25 text-red-400 uppercase tracking-wide animate-pulse">Anomaly Detected</span>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-2xl">
+                  Statistical baselines calculated across your active workspaces have flagged performance creep exceeding standard thresholds (exceeding baseline limits of &mu; + 1.2&sigma;).
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                  {allRegressions.slice(0, 3).map((item) => (
+                    item.regressions.map((reg, idx) => (
+                      <div key={`${item.session.id}-${reg.metric}-${idx}`} className="bg-[#030712]/60 border border-red-500/15 p-3 rounded-xl flex flex-col justify-between hover:border-red-500/30 transition-all">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-xs font-bold text-gray-200 truncate max-w-[150px]">{item.session.url}</span>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                            reg.severity === 'critical' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
+                          }`}>
+                            {reg.severity}
+                          </span>
+                        </div>
+                        <div className="mt-2.5 flex items-baseline gap-1.5">
+                          <span className="text-[10px] text-gray-500 font-semibold">{reg.metric}:</span>
+                          <span className="text-sm font-extrabold text-white">{reg.activeValue}{reg.metric === 'Network Latency' ? 'ms' : reg.metric === 'LCP' ? 'ms' : ''}</span>
+                          <span className="text-xs text-red-400 font-bold font-mono">+{reg.percentageIncrease}%</span>
+                        </div>
+                        <span className="text-[9px] text-gray-500 font-semibold mt-1">
+                          Baseline Avg: {reg.baselineAvg}{reg.metric === 'Network Latency' ? 'ms' : reg.metric === 'LCP' ? 'ms' : ''}
+                        </span>
+                      </div>
+                    ))
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Filter and Table Card */}
       <div className="bg-[#0b0f19] border border-[#1f2937] rounded-3xl overflow-hidden shadow-xl">
@@ -266,9 +328,32 @@ export default function TelemetryStreamView({
                   >
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white group-hover:text-[#a78bfa] transition-colors truncate max-w-md">
-                          {session.url}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-white group-hover:text-[#a78bfa] transition-colors truncate max-w-md">
+                            {session.url}
+                          </span>
+                          {(() => {
+                            const fullSessionsForBaseline = sessions.map(s => ({
+                              ...s,
+                              events: events[s.id] || []
+                            })) as any[];
+                            const baselinesForLine = calculatePerformanceBaselines(fullSessionsForBaseline);
+                            const sessionRegressions = detectRegressions({ ...session, events: events[session.id] || [] } as any, baselinesForLine);
+                            return sessionRegressions.map((reg, idx) => (
+                              <span 
+                                key={idx} 
+                                title={`${reg.metric} regression: ${reg.activeValue} (Baseline avg: ${reg.baselineAvg})`}
+                                className={`inline-flex items-center px-2 py-0.5 text-[9px] font-extrabold rounded-md border uppercase tracking-wider animate-fadeIn ${
+                                  reg.severity === 'critical'
+                                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                    : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                                }`}
+                              >
+                                {reg.metric === 'LCP' ? 'LCP Anomaly' : reg.metric === 'Network Latency' ? 'Slow API' : 'CPU Load'}
+                              </span>
+                            ));
+                          })()}
+                        </div>
                         <span className="text-[10px] text-gray-500 font-mono mt-0.5">
                           ID: {session.id}
                         </span>

@@ -392,6 +392,7 @@ export default function DashboardController() {
           {activeTab === 'telemetry' && (
             <TelemetryStreamView
               sessions={sessions}
+              events={events}
               selectedSessionId={selectedSessionId}
               setSelectedSessionId={setSelectedSessionId}
               setActiveTab={setActiveTab}
